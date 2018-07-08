@@ -1,0 +1,538 @@
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks,linkcolor=,urlcolor=links}
+
+\usetheme{Boadilla}
+\usecolortheme{seahorse}
+% \usefonttheme{serif}
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{bibliography item}{\insertbiblabel}
+\setbeamersize{description width=1cm}
+\setbeamertemplate{items}[circle]
+
+\usepackage{luacode}
+\usepackage{luatexja}
+\usepackage{pgfpages}
+\usepackage{fontspec}
+
+\begin{luacode*}
+  USE_IPAFONT = os.getenv"USE_IPAFONT"
+  USE_YUFONT = os.getenv"USE_YUFONT"
+  
+  if USE_YUFONT == "true" then
+    tex.sprint("\\AtBeginDocument{\\usepackage[yu-osx, deluxe, expert]{luatexja-preset}}")
+  elseif USE_IPAFONT == "true" then
+    tex.sprint("\\AtBeginDocument{\\usepackage[ipaex, deluxe, expert]{luatexja-preset}}")
+  else
+    tex.sprint("\\AtBeginDocument{\\usepackage[hiragino-pro, deluxe, expert]{luatexja-preset}}")
+  end
+\end{luacode*}
+
+\usepackage{epigraph}
+\usepackage{etoolbox}
+\usepackage{tikz}
+\usepackage{framed}
+\usepackage[ss]{libertine}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{tikz-qtree}
+
+\renewcommand{\kanjifamilydefault}{\gtdefault}
+
+\resetcounteronoverlays{lstlisting}
+\definecolor{bluegray}{rgb}{0.4, 0.6, 0.8}
+\DeclareCaptionFormat{listing}{{\color{bluegray}\lstlistingname}#2#3}
+\captionsetup[lstlisting]{format=listing, font={footnotesize}}
+
+%\setbeameroption{show notes on second screen=right}
+
+\setmonofont[Ligatures=TeX]{CMU Typewriter Text}
+
+\input{vc.tex}
+
+\newcommand{\Fujitask}{{\rmfamily\bfseries Fujitask}}
+
+\title[Fujitask]{%
+  \bfseries\rmfamily\mcfamily
+  Fujitask \\
+  {\footnotesize The Transaction Monad Meets ``Subtypes''}
+}
+\author[吉村 優]{%
+  吉村 優 \\
+  Hikaru \textsc{Yoshimura}
+}
+\date[June 13, 2018]{%
+   July 11, 2018 \\%
+  {\footnotesize (Git Commit ID: \href{https://github.com/y-yu/slackcont-slide}{\GITAbrHash})}
+}
+\institute[RMP]{%
+  リクルートマーケティングパートナーズ \\
+  \href{mailto:hikaru_yoshimura@r.recruit.co.jp}{hikaru\_yoshimura@r.recruit.co.jp} \\
+  \href{mailto:yyu@mental.poker}{yyu@mental.poker}
+}
+% \institute{%
+%   \href{mailto:yyu@mental.poker}{yyu@mental.poker}
+% }
+
+\input{./lib/quotebox.tex}
+\input{./lib/footnotemark.tex}
+\input{./lib/ballon.tex}
+\input{./lib/listings.tex}
+
+\setbeamertemplate{items}[circle]
+
+
+\newcommand\ballref[1]{%
+  \usebeamercolor{enumerate item}%
+  \tikzset{beameritem/.style={circle,inner sep=0,minimum size=2ex,text=enumerate item.bg,fill=enumerate item.fg,font=\footnotesize}}%
+  \tikz[baseline=(n.base)]\node(n)[beameritem]{\ref{#1}};%
+}
+
+\begin{document}
+
+\frame{\maketitle}
+
+\begin{frame}
+  \frametitle{目次}
+
+  \tableofcontents
+\end{frame}
+
+\section{自己紹介}
+\begin{frame}
+  \frametitle{自己紹介}
+  
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
+      \begin{center}
+        \begin{figure}
+          \includegraphics[width=0.95\textwidth]{img/bird2x.png}
+        \end{figure}
+      \end{center}
+ 
+      \begin{table}[h]
+        \begin{tabular}{ll}
+          Twitter & \href{https://twitter.com/\_yyu\_}{@\_yyu\_} \\
+          Qiita &  \href{https://qiita.com/yyu}{yyu} \\
+          GitHub &  \href{https://github.com/y-yu}{y-yu} \\
+        \end{tabular}
+      \end{table}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \pause
+      \begin{itemize}
+        \item<+-> 筑波大学 情報科学類卒（学士）
+        \item<+-> プログラム論理研究室
+        \item<+-> 洗練されたトランザクションモナドの紹介
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{トランザクションとは？}
+
+\begin{frame}
+  \frametitle{トランザクションとは？}
+
+  \pause
+  \begin{itemize}
+    \item<+-> \textbf{トランザクション}は次を満す
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+    \begin{shadequote}[r]{}
+      \begin{itemize}
+        \item 全操作が完了するまで、他のプロセスはその途中の状態を観測できない
+        \item いずれかの操作が失敗した場合は全てが失敗となり、データベースは操作を行う前の状態に戻る
+      \end{itemize}
+    \end{shadequote}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> たとえば「課金したならばコーチング機能を使えるようにし、
+    コーチをアサインする」という次のような処理がある
+    \begin{enumerate}
+      \item 課金履歴の更新
+      \item コーチング機能が使えるという権限管理の更新
+      \item コーチのアサイン情報の更新
+    \end{enumerate}
+    
+    \item<+-> これらのうちどれかひとつでも失敗したならば中途半端な状態にはならず、
+    なにもしなかった状態となる
+  \end{itemize}
+\end{frame}
+
+\section{トランザクションのやり方}
+
+\begin{frame}[fragile]
+  \frametitle{トランザクションのやり方}
+
+  \pause
+  \begin{enumerate}
+    \item<+-> \texttt{BEGIN}と\texttt{COMMIT}に相当する
+    関数を用意してそれらを実行する
+  \end{enumerate}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+val transactionManager = new TM()
+
+transactionManager.begin()
+
+something.databaseOperation()
+
+transactionManager.commit()
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> \lstinline|begin|とか\lstinline|commit|を忘れたら終わり
+
+    \item<+-> C言語といった表現力の低いプログラム言語では、このような
+    スタイルしかできなかった
+    \begin{itemize}
+      \item<+-> たとえば、かつてのファイル操作はこんなシンタックスで
+      ロックするなどしていた
+    \end{itemize}
+
+    \item<+-> 最近のプログラム言語でこのような方法を使うことは少ない
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{トランザクションのやり方}
+
+  \pause
+  \begin{enumerate}
+    \setcounter{enumi}{1}
+    \item<+-> \label{enum:loan} 高階関数を利用する（ローンパターン）
+  \end{enumerate}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+def withTransaction(f: Session => Unit): Unit = {
+  val transactionManager = new TM()
+
+  transactionManager.begin()
+  f(transactionManager.session)
+  transactionManager.commit()
+}
+
+withTransaction {
+  something.databaseOperation()
+}
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> 関数を引数として渡せるプログラム言語ではよく利用される
+    \begin{itemize}
+      \item<+-> 関数が引数として渡せなくとも、関数を表すようなインターフェースを
+      利用することで昔のJavaなどで利用できた
+    \end{itemize}
+      
+    \item<+-> 最近のプログラム言語でこの方法を使うことが多い（？）
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{トランザクションのやり方}
+
+  \begin{itemize}
+    \item<+-> \ballref{enum:loan}のローンパターンを使えば解決か？
+    \item<+-> ところが、次のようにプログラマーがミスで二重にトランザクションを
+    貼ってしまったらどうなるだろう？    
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+def somethingOperation(): Unit = {
+  withTransaction { something.databaseOperation() }
+}
+    
+withTransaction { somethingOperation() }
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> ローンパターンは二重になっていないか？をプログラマーが
+    チェックする必要があるのか？
+    
+    \item<+-> そもそも、多くの場合トランザクションが必要かどうかはSQLから判定できる
+    
+    \item<+-> にも関わらず、ローンパターンではSQLを\textbf{使う時}に
+    トランザクションが必要かを判断している
+  \end{itemize}
+\end{frame}
+
+\section{\protect\Fujitask とサブタイプ}
+
+\begin{frame}
+  \frametitle{\Fujitask とは？}
+
+  \pause
+  \begin{uncoverenv}<+->
+    \begin{block}{\Fujitask}
+      データベースのトランザクションを管理するデータ構造（モナド）
+    \end{block}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> トランザクションを貼るかどうか？を\textbf{コンパイル時}に
+    判断してくれる
+
+    \item<+-> プログラマーの明示的な操作なしに適切なトランザクションの開始と解放が
+    実行され、かつトランザクションが二重・三重になったりしない
+
+    \item<+-> かつてドワンゴにいた藤田さんが開発したため、このように呼ばれている
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\Fujitask とは？}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+trait Task[-R, +A] { lhs =>
+  def execute(r: R)(implicit ec: EC): Future[A]
+
+  def flatMap[ER <: R, B](f: A => Task[ER, B]): Task[ER, B] =
+    new Task[ER, B] {
+      def execute(r: ER)(implicit ec: EC): Future[B] =
+        lhs.execute(r).map(f).flatMap(_.execute(r))
+    }
+
+  def map[B](f: A => B): Task[R, B] = flatMap(a => Task(f(a)))
+
+  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
+    = runner.run(lhs)
+}
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> \lstinline|flatMap|と\lstinline|map|に
+    \textbf{サブタイプ}を使っている！
+
+    \item<+-> Haskellにはサブタイプがないことがよく知られているが、
+    なぜこのモナドはサブタイプを使っているのか？
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{サブタイプ}
+
+  \pause
+  \begin{block}{サブタイプ}
+    型$B$が型$A$の期待されている場所で安全に使用可能であるとき、
+    $B$は$A$の\textbf{サブタイプ}である
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{サブタイプと束}
+
+  \pause
+  \begin{itemize}
+    \item<+-> Scalaのサブタイプ関係は\textbf{束}を作る
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+    \begin{block}{束}
+      任意の2つの元が一意な上限および下限を持つ半順序集合のこと
+    \end{block}
+  \end{uncoverenv}
+
+  \begin{columns}
+    \begin{column}{0.3\textwidth}
+      \begin{center}
+        \begin{uncoverenv}<+->
+          \begin{tikzpicture}[scale=.8]
+            \Tree[.Any
+                      [.Integer \edge[roof]; {$\vdots$} ]
+                      [.String \edge[roof]; {$\vdots$} ]
+                      [.Boolean \edge[roof]; {$\vdots$} ] ]
+          \end{tikzpicture}
+                    
+          \begin{tikzpicture}[scale=.8]
+            \tikzset{grow'=up}
+            \Tree[.Nothing \edge[roof]; { \hspace{90pt} } ]
+          \end{tikzpicture}
+        \end{uncoverenv}
+      \end{center}
+    \end{column}
+
+    \begin{column}{0.7\textwidth}
+      \begin{itemize}
+        \item<+-> どんな2つの元も、一意な共通の祖先と子孫を持つ
+        \item<+-> 型システム理論においては、下限（\lstinline|Nothing|）を
+        入れると複雑になると知られており避けられる傾向にあるが、Scalaには入っている
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{トランザクションと束とサブタイプ}
+ 
+  \begin{itemize}
+    \item<+-> 束がトランザクションと関係あるのか？
+    \item<+-> 実はトランザクションは束構造を作る！
+    \item<+-> そして、その束となったトランザクションを
+    サブタイプで表現する
+  \end{itemize}
+
+  \begin{columns}
+    \begin{column}{0.3\textwidth}
+      \begin{center}
+        \begin{uncoverenv}<+->
+          \begin{tikzpicture}[scale=.8]
+            \Tree[.NoTransaction
+                       [.Read ReadWrite ] ]
+          \end{tikzpicture}
+        \end{uncoverenv}
+      \end{center}
+    \end{column}
+
+    \begin{column}{0.7\textwidth}
+      \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+trait NoTransaction
+ 
+trait Read extends NoTransaction
+ 
+trait ReadWrite extends Read
+\end{lstlisting}
+      \end{uncoverenv}
+    \end{column}
+  \end{columns}
+
+  \begin{itemize}
+    \item<+-> たとえばスレーブがある場合などはもっと束っぽい構造となる
+    
+    \item<+-> サブタイプ関係を使ってトランザクションの束構造を
+    プログラム内に\textbf{型レベル}でエンコードしたぞ！
+
+    \item<+-> この構造は型レベルだからコンパイル時に利用できる
+  \end{itemize}
+\end{frame}
+ 
+\begin{frame}[fragile]
+  \frametitle{\Fujitask と合成}
+ 
+  \pause
+  \begin{itemize}
+    \item<+-> \Fujitask の合成演算である\lstinline|flatMap|は
+    次のようになっている
+  \end{itemize}
+    
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+trait Task[-R, +A] {
+  def flatMap[ER <: R, B](f: A => Task[ER, B]): Task[ER, B] =
+}
+\end{lstlisting}
+  \end{uncoverenv}
+ 
+  \begin{itemize}
+    \item<+-> これはたとえば次のようになる
+    \begin{enumerate}
+      \item<+-> \lstinline|Task[NoTransaction, A]|と
+      \lstinline|Task[Read, A]|を合成したら、\lstinline|Task[Read, A]|となる
+ 
+      \item<+-> \lstinline|Task[Read, A]|と
+      \lstinline|Task[Read, A]|を合成したら、\lstinline|Task[Read, A]|となる
+ 
+      \item<+-> \lstinline|Task[Read, A]|と
+      \lstinline|Task[Write, A]|を合成したら、\lstinline|Task[Write, A]|となる
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\Fujitask の実行}
+
+  \pause
+  \begin{itemize}
+    \item<+-> \Fujitask には\lstinline|run|というメソッドがある
+  \end{itemize}
+  
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+trait Task[-R, +A] { lhs =>
+  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
+    = runner.run(lhs)
+}
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> \lstinline|TaskRunner|は次のようにトランザクション
+    をどうするかを定義できる
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+trait TaskRunner[R] {
+  def run[A](task: Task[R, A]): Future[A]
+}
+\end{lstlisting}
+  \end{uncoverenv}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\Fujitask の実行}
+
+  \begin{itemize}
+    \item<+-> あとは\lstinline|TaskRunner|の実装を書けばOK
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+implicit val readTaskRunner: TaskRunner[ReadWrite] =
+  new TaskRunner[ReadWrite] {
+    private val transactionManager = new TM()
+    
+    def run[A](task: Task[Read, A]): Future[A] = {
+      transactionManager.begin()
+      task.execute(new Read {})
+      transactionManager.commmit()
+    }
+  }
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> \lstinline|implicit|でトランザクションの種類を表す型に
+    もとづいた\lstinline|TaskRunner|の実装が\textbf{コンパイル時}に選択される
+
+    \item<+-> オブジェクト指向のサブタイプ、関数型プログラミングの型クラスが
+    美しく融合している
+    \begin{itemize}
+      \item サブタイプがないHaskell、型クラスがないJavaに\Fujitask は実装できない
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{まとめ}
+
+\begin{frame}
+  \frametitle{まとめ}
+
+  \pause
+  \begin{itemize}
+    \item<+-> トランザクションとはしばしば束構造を成す
+    \item<+-> 束構造を型レベルにエンコードする手段としてサブタイプが使える
+    \item<+-> 束構造に基づくアドホックな処理を、サブタイプと型クラスで実現できる
+    \item<+-> オブジョクト指向と関数型プログラミングは美しく融合されうる
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \centering
+  {\Huge Thank you for your attention!}
+\end{frame}
+
+\end{document}
