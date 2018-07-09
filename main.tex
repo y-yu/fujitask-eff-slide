@@ -125,7 +125,7 @@
       \begin{itemize}
         \item<+-> 筑波大学 情報科学類卒（学士）
         \item<+-> プログラム論理研究室
-        \item<+-> 洗練されたトランザクションモナドの紹介
+        \item<+-> トランザクションとサブタイプについて
       \end{itemize}
     \end{column}
   \end{columns}
@@ -220,8 +220,8 @@ def withTransaction(f: Session => Unit): Unit = {
   transactionManager.commit()
 }
 
-withTransaction {
-  something.databaseOperation()
+withTransaction { session =>
+  something.databaseOperation(session)
 }
 \end{lstlisting}
   \end{uncoverenv}
@@ -230,7 +230,7 @@ withTransaction {
     \item<+-> 関数を引数として渡せるプログラム言語ではよく利用される
     \begin{itemize}
       \item<+-> 関数が引数として渡せなくとも、関数を表すようなインターフェースを
-      利用することで昔のJavaなどで利用できた
+      利用することで昔のJavaなどでも利用できた
     \end{itemize}
       
     \item<+-> 最近のプログラム言語でこの方法を使うことが多い（？）
@@ -249,10 +249,10 @@ withTransaction {
   \begin{uncoverenv}<+->
 \begin{lstlisting}[style=scala]
 def somethingOperation(): Unit = {
-  withTransaction { something.databaseOperation() }
+  withTransaction { something.databaseOperation }
 }
     
-withTransaction { somethingOperation() }
+withTransaction { somethingOperation }
 \end{lstlisting}
   \end{uncoverenv}
 
@@ -262,7 +262,7 @@ withTransaction { somethingOperation() }
     
     \item<+-> そもそも、多くの場合トランザクションが必要かどうかはSQLから判定できる
     
-    \item<+-> にも関わらず、ローンパターンではSQLを\textbf{使う時}に
+    \item<+-> にも関わらず、ローンパターンではSQLを\textbf{使う時に}
     トランザクションが必要かを判断している
   \end{itemize}
 \end{frame}
@@ -293,6 +293,10 @@ withTransaction { somethingOperation() }
 \begin{frame}[fragile]
   \frametitle{\Fujitask とは？}
 
+  \begin{itemize}
+    \item<+-> 定義は次となる
+  \end{itemize}
+
   \begin{uncoverenv}<+->
 \begin{lstlisting}[style=scala]
 trait Task[-R, +A] { lhs =>
@@ -322,13 +326,30 @@ trait Task[-R, +A] { lhs =>
 \end{frame}
 
 \begin{frame}
-  \frametitle{サブタイプ}
+  \frametitle{サブタイプと半順序集合}
 
   \pause
   \begin{block}{サブタイプ}
     型$B$が型$A$の期待されている場所で安全に使用可能であるとき、
     $B$は$A$の\textbf{サブタイプ}である
+
+    \begin{itemize}
+      \item 型$B$が型$A$のサブタイプであるとき$B <: A$と表記する
+    \end{itemize}
   \end{block}
+
+  \pause
+  \begin{itemize}
+    \item<+-> サブタイプには次のような特徴がある
+    \begin{enumerate}
+      \item<+-> 任意の型$A$において、$A <: A$である（反射）
+      \item<+-> 任意の型$A, B, C$において、$C <: B$かつ$B <: A$ならば$C <: A$である（推移）
+      \item<+-> 任意の型$A, B$において、$B <: A$かつ$A <: B$ならば$A = B$である（反対称）
+    \end{enumerate}
+
+    \item<+-> このような関係と集合を\textbf{半順序集合}と言い、
+    型とサブタイプ関係は半順序集合となる
+  \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -351,9 +372,9 @@ trait Task[-R, +A] { lhs =>
         \begin{uncoverenv}<+->
           \begin{tikzpicture}[scale=.8]
             \Tree[.Any
-                      [.Integer \edge[roof]; {$\vdots$} ]
-                      [.String \edge[roof]; {$\vdots$} ]
-                      [.Boolean \edge[roof]; {$\vdots$} ] ]
+                      [.{$\vdots$} [.Integer \edge[roof]; {$\vdots$} ] ]
+                      [.{$\vdots$} [.String \edge[roof]; {$\vdots$} ] ]
+                      [.{$\vdots$} [.Boolean \edge[roof]; {$\vdots$} ] ] ]
           \end{tikzpicture}
                     
           \begin{tikzpicture}[scale=.8]
@@ -366,9 +387,10 @@ trait Task[-R, +A] { lhs =>
 
     \begin{column}{0.7\textwidth}
       \begin{itemize}
-        \item<+-> どんな2つの元も、一意な共通の祖先と子孫を持つ
-        \item<+-> 型システム理論においては、下限（\lstinline|Nothing|）を
+        \item<+-> どんな2つの元も、一意な共通の祖先と子孫をそれぞれ持つ
+        \item<+-> 型システム理論においては、ボトム（\lstinline|Nothing|）を
         入れると複雑になると知られており避けられる傾向にあるが、Scalaには入っている
+        \item<+-> そのため、Scalaのサブタイプ関係は束となる
       \end{itemize}
     \end{column}
   \end{columns}
@@ -431,7 +453,7 @@ trait ReadWrite extends Read
   \begin{uncoverenv}<+->
 \begin{lstlisting}[style=scala]
 trait Task[-R, +A] {
-  def flatMap[ER <: R, B](f: A => Task[ER, B]): Task[ER, B] =
+  def flatMap[ER <: R, B](f: A => Task[ER, B]): Task[ER, B]
 }
 \end{lstlisting}
   \end{uncoverenv}
@@ -440,13 +462,13 @@ trait Task[-R, +A] {
     \item<+-> これはたとえば次のようになる
     \begin{enumerate}
       \item<+-> \lstinline|Task[NoTransaction, A]|と
-      \lstinline|Task[Read, A]|を合成したら、\lstinline|Task[Read, A]|となる
+      \lstinline|Task[Read, B]|を合成したら、\lstinline|Task[Read, B]|となる
  
       \item<+-> \lstinline|Task[Read, A]|と
-      \lstinline|Task[Read, A]|を合成したら、\lstinline|Task[Read, A]|となる
+      \lstinline|Task[Read, B]|を合成したら、\lstinline|Task[Read, B]|となる
  
       \item<+-> \lstinline|Task[Read, A]|と
-      \lstinline|Task[Write, A]|を合成したら、\lstinline|Task[Write, A]|となる
+      \lstinline|Task[Write, B]|を合成したら、\lstinline|Task[Write, B]|となる
     \end{enumerate}
   \end{itemize}
 \end{frame}
@@ -463,7 +485,6 @@ trait Task[-R, +A] {
 \begin{lstlisting}[style=scala]
 trait Task[-R, +A] { lhs =>
   def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
-    = runner.run(lhs)
 }
 \end{lstlisting}
   \end{uncoverenv}
@@ -508,7 +529,7 @@ implicit val readTaskRunner: TaskRunner[ReadWrite] =
     \item<+-> \lstinline|implicit|でトランザクションの種類を表す型に
     もとづいた\lstinline|TaskRunner|の実装が\textbf{コンパイル時}に選択される
 
-    \item<+-> オブジェクト指向のサブタイプ、関数型プログラミングの型クラスが
+    \item<+-> オブジェクト指向プログラミングのサブタイプ、関数型プログラミングの型クラスが
     美しく融合している
     \begin{itemize}
       \item サブタイプがないHaskell、型クラスがないJavaに\Fujitask は実装できない
@@ -526,7 +547,7 @@ implicit val readTaskRunner: TaskRunner[ReadWrite] =
     \item<+-> トランザクションとはしばしば束構造を成す
     \item<+-> 束構造を型レベルにエンコードする手段としてサブタイプが使える
     \item<+-> 束構造に基づくアドホックな処理を、サブタイプと型クラスで実現できる
-    \item<+-> オブジョクト指向と関数型プログラミングは美しく融合されうる
+    \item<+-> オブジョクト指向プログラミングと関数型プログラミングは美しく融合されうる
   \end{itemize}
 \end{frame}
 
