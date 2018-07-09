@@ -512,7 +512,7 @@ trait TaskRunner[R] {
 
   \begin{uncoverenv}<+->
 \begin{lstlisting}[style=scala]
-implicit val readTaskRunner: TaskRunner[ReadWrite] =
+implicit val readWriteTaskRunner: TaskRunner[ReadWrite] =
   new TaskRunner[ReadWrite] {
     private val transactionManager = new TM()
     
