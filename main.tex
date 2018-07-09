@@ -310,8 +310,8 @@ trait Task[-R, +A] { lhs =>
 
   def map[B](f: A => B): Task[R, B] = flatMap(a => Task(f(a)))
 
-  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
-    = runner.run(lhs)
+  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A] =
+    runner.run(lhs)
 }
 \end{lstlisting}
   \end{uncoverenv}
