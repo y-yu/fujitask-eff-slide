@@ -533,11 +533,36 @@ implicit val readWriteTaskRunner: TaskRunner[ReadWrite] =
   \begin{itemize}
     \item<+-> \lstinline|implicit|でトランザクションの種類を表す型に
     もとづいた\lstinline|TaskRunner|の実装が\textbf{コンパイル時}に選択される
+  \end{itemize}
+\end{frame}
 
-    \item<+-> オブジェクト指向プログラミングのサブタイプ、関数型プログラミングの型クラスが
-    美しく融合している
+\begin{frame}[fragile]
+  \frametitle{\Fujitask の実行}
+
+  \begin{itemize}
+    \item<+-> \Fujitask はモナドなので、\lstinline|for|式で
+    まとめていくことができる
+  \end{itemize}
+
+  \begin{uncoverenv}<+->
+\begin{lstlisting}[style=scala]
+val transaction = for {
+  _ <- paymentRepository.update(payment)
+  _ <- userPermissionRepository.update(userPermission)
+  _ <- coachRepository.assgin(coach, user)
+} yield ()
+
+transaction.run()
+\end{lstlisting}
+  \end{uncoverenv}
+
+  \begin{itemize}
+    \item<+-> モナド構文ですっきり書ける
+
+    \item<+-> オブジェクト指向プログラミングのサブタイプ、
+    関数型プログラミングの型クラス・モナドが美しく融合している
     \begin{itemize}
-      \item サブタイプがないHaskell、型クラスがないJavaに\Fujitask は実装できない
+      \item サブタイプがないHaskell、モナド構文・型クラスがないJavaに\Fujitask は実装できない
     \end{itemize}
   \end{itemize}
 \end{frame}
