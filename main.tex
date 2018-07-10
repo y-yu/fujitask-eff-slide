@@ -487,63 +487,63 @@ trait Task[-R, +A] {
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]
-  \frametitle{\Fujitask の実行}
-
-  \pause
-  \begin{itemize}
-    \item<+-> \Fujitask には\lstinline|run|というメソッドがある
-  \end{itemize}
-  
-  \begin{uncoverenv}<+->
-\begin{lstlisting}[style=scala]
-trait Task[-R, +A] { lhs =>
-  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
-}
-\end{lstlisting}
-  \end{uncoverenv}
-
-  \begin{itemize}
-    \item<+-> \lstinline|TaskRunner|は次のようにトランザクション
-    をどうするかを定義できる
-  \end{itemize}
-
-  \begin{uncoverenv}<+->
-\begin{lstlisting}[style=scala]
-trait TaskRunner[R] {
-  def run[A](task: Task[R, A]): Future[A]
-}
-\end{lstlisting}
-  \end{uncoverenv}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{\Fujitask の実行}
-
-  \begin{itemize}
-    \item<+-> あとは\lstinline|TaskRunner|の実装を書けばOK
-  \end{itemize}
-
-  \begin{uncoverenv}<+->
-\begin{lstlisting}[style=scala]
-implicit val writeTaskRunner: TaskRunner[Write] =
-  new TaskRunner[Write] {
-    private val transactionManager = new TM()
-    
-    def run[A](task: Task[Write, A]): Future[A] = {
-      transactionManager.begin()
-      task.execute(new Write {})
-      transactionManager.commmit()
-    }
-  }
-\end{lstlisting}
-  \end{uncoverenv}
-
-  \begin{itemize}
-    \item<+-> \lstinline|implicit|でトランザクションの種類を表す型に
-    もとづいた\lstinline|TaskRunner|の実装が\textbf{コンパイル時}に選択される
-  \end{itemize}
-\end{frame}
+%　\begin{frame}[fragile]
+%　  \frametitle{\Fujitask の実行}
+%　 
+%　  \pause
+%　  \begin{itemize}
+%　    \item<+-> \Fujitask には\lstinline|run|というメソッドがある
+%　  \end{itemize}
+%　  
+%　  \begin{uncoverenv}<+->
+%　\begin{lstlisting}[style=scala]
+%　trait Task[-R, +A] { lhs =>
+%　  def run[ER <: R]()(implicit runner: TaskRunner[ER]): Future[A]
+%　}
+%　\end{lstlisting}
+%　  \end{uncoverenv}
+%　 
+%　  \begin{itemize}
+%　    \item<+-> \lstinline|TaskRunner|は次のようにトランザクション
+%　    をどうするかを定義できる
+%　  \end{itemize}
+%　 
+%　  \begin{uncoverenv}<+->
+%　\begin{lstlisting}[style=scala]
+%　trait TaskRunner[R] {
+%　  def run[A](task: Task[R, A]): Future[A]
+%　}
+%　\end{lstlisting}
+%　  \end{uncoverenv}
+%　\end{frame}
+%　 
+%　\begin{frame}[fragile]
+%　  \frametitle{\Fujitask の実行}
+%　 
+%　  \begin{itemize}
+%　    \item<+-> あとは\lstinline|TaskRunner|の実装を書けばOK
+%　  \end{itemize}
+%　 
+%　  \begin{uncoverenv}<+->
+%　\begin{lstlisting}[style=scala]
+%　implicit val writeTaskRunner: TaskRunner[Write] =
+%　  new TaskRunner[Write] {
+%　    private val transactionManager = new TM()
+%　    
+%　    def run[A](task: Task[Write, A]): Future[A] = {
+%　      transactionManager.begin()
+%　      task.execute(new Write {})
+%　      transactionManager.commmit()
+%　    }
+%　  }
+%　\end{lstlisting}
+%　  \end{uncoverenv}
+%　 
+%　  \begin{itemize}
+%　    \item<+-> \lstinline|implicit|でトランザクションの種類を表す型に
+%　    もとづいた\lstinline|TaskRunner|の実装が\textbf{コンパイル時}に選択される
+%　  \end{itemize}
+%　\end{frame}
 
 \begin{frame}[fragile]
   \frametitle{\Fujitask の実行}
