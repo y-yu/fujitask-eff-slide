@@ -206,7 +206,6 @@ transactionManager.commit()
 \begin{frame}[fragile]
   \frametitle{トランザクションのやり方}
 
-  \pause
   \begin{enumerate}
     \setcounter{enumi}{1}
     \item<+-> \label{enum:loan} 高階関数を利用する（ローンパターン）
@@ -263,8 +262,8 @@ withTransaction { somethingOperation }
   \end{uncoverenv}
 
   \begin{itemize}
-    \item<+-> ローンパターンは二重になっていないか？をプログラマーが
-    チェックする必要があるのか？
+    \item<+-> さらに、2つのトランザクション処理を結合したくなったとしても、
+    新しく処理を書かなければならない
     
     \item<+-> そもそも、多くの場合トランザクションが必要かどうかはSQLから判定できる
     
@@ -345,7 +344,7 @@ trait Task[-R, +A] { lhs =>
 
   \pause
   \begin{itemize}
-    \item<+-> サブタイプには次のような特徴がある
+    \item<+-> サブタイプ関係には次のような特徴がある
     \begin{enumerate}
       \item<+-> 任意の型$A$において、$A <: A$である（反射）
       \item<+-> 任意の型$A, B, C$において、$C <: B$かつ$B <: A$ならば$C <: A$である（推移）
@@ -402,25 +401,34 @@ trait Task[-R, +A] { lhs =>
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{トランザクションと束とサブタイプ}
+  \frametitle{トランザクションと束}
  
   \begin{itemize}
-    \item<+-> 束がトランザクションと関係あるのか？
-    \item<+-> 実はトランザクションは束構造を作る！
+    \item<+-> 実はトランザクションは束構造を作る
     \item<+-> そして、その束となったトランザクションを
     サブタイプで表現する
   \end{itemize}
 
   \begin{columns}
     \begin{column}{0.3\textwidth}
-      \begin{center}
-        \begin{uncoverenv}<+->
-          \begin{tikzpicture}[scale=.8]
+      \begin{uncoverenv}<+->
+        \begin{tikzpicture}[scale=.8]
+          \begin{scope}
             \Tree[.NoTransaction
-                       [.Read ReadWrite ] ]
-          \end{tikzpicture}
-        \end{uncoverenv}
-      \end{center}
+                          \node(s1){ReadSlave1};
+                          \node(s2){ReadSlave2}; ]
+          \end{scope}
+                        
+          \begin{scope}[yshift=-60pt]
+            \Tree[.\node(r){ReadMaster}; Write ]
+          \end{scope}
+       
+          \begin{scope}
+            \draw (s1.south)--(r.north);
+            \draw (s2.south)--(r.north);
+          \end{scope}
+        \end{tikzpicture}
+      \end{uncoverenv}
     \end{column}
 
     \begin{column}{0.7\textwidth}
@@ -428,21 +436,22 @@ trait Task[-R, +A] { lhs =>
 \begin{lstlisting}[style=scala]
 trait NoTransaction
  
-trait Read extends NoTransaction
+trait ReadSlave1 extends NoTransaction
+
+trait ReadSlave2 extends NoTransaction
  
-trait ReadWrite extends Read
+trait ReadMaster
+  extends ReadSlave1 with ReadSlave2
+
+trait Write extends ReadMaster
 \end{lstlisting}
       \end{uncoverenv}
     \end{column}
   \end{columns}
 
   \begin{itemize}
-    \item<+-> たとえばスレーブがある場合などはもっと束っぽい構造となる
-    
     \item<+-> サブタイプ関係を使ってトランザクションの束構造を
-    プログラム内に\textbf{型レベル}でエンコードしたぞ！
-
-    \item<+-> この構造は型レベルだからコンパイル時に利用できる
+    プログラム内に\textbf{型レベル}でエンコードできた
   \end{itemize}
 \end{frame}
  
@@ -466,14 +475,14 @@ trait Task[-R, +A] {
   \begin{itemize}
     \item<+-> これはたとえば次のようになる
     \begin{enumerate}
-      \item<+-> \lstinline|Task[NoTransaction, A]|と
-      \lstinline|Task[Read, B]|を合成したら、\lstinline|Task[Read, B]|となる
+      \item<+-> \lstinline|Task[ReadSlave1, A]|と
+      \lstinline|Task[ReadSlave1, B]|を合成したら、\lstinline|Task[ReadSlave1, B]|となる
  
-      \item<+-> \lstinline|Task[Read, A]|と
-      \lstinline|Task[Read, B]|を合成したら、\lstinline|Task[Read, B]|となる
+      \item<+-> \lstinline|Task[ReadSlave1, A]|と
+      \lstinline|Task[ReadSlave2, B]|を合成したら、\lstinline|Task[ReadMaster, B]|となる
  
-      \item<+-> \lstinline|Task[Read, A]|と
-      \lstinline|Task[Write, B]|を合成したら、\lstinline|Task[Write, B]|となる
+      \item<+-> \lstinline|Task[ReadSlave1, A]|と
+      \lstinline|Task[ReadMaster, B]|を合成したら、\lstinline|Task[ReadMaster, B]|となる
     \end{enumerate}
   \end{itemize}
 \end{frame}
@@ -517,13 +526,13 @@ trait TaskRunner[R] {
 
   \begin{uncoverenv}<+->
 \begin{lstlisting}[style=scala]
-implicit val readWriteTaskRunner: TaskRunner[ReadWrite] =
-  new TaskRunner[ReadWrite] {
+implicit val writeTaskRunner: TaskRunner[Write] =
+  new TaskRunner[Write] {
     private val transactionManager = new TM()
     
-    def run[A](task: Task[Read, A]): Future[A] = {
+    def run[A](task: Task[Write, A]): Future[A] = {
       transactionManager.begin()
-      task.execute(new Read {})
+      task.execute(new Write {})
       transactionManager.commmit()
     }
   }
@@ -581,7 +590,7 @@ transaction.run()
   \end{itemize}
 \end{frame}
 
-\section{参考文献}
+\section*{参考文献}
 
 \begin{frame}
   \frametitle{参考文献}
