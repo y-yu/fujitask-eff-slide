@@ -3,7 +3,8 @@ Fujitask Eff Slide
 
 ## 成果物（PDF）
 
-- TODO
+- [アニメーションあり版](https://y-yu.github.io/fujitask-eff-slide/fujitask.pdf)
+- [アニメーションなし版](https://y-yu.github.io/fujitask-eff-slide/fujitask_without_animation.pdf)
 
 ## コンパイル
 
