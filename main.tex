@@ -1,43 +1,106 @@
+\usepackage{luatexja}
+\usepackage[hiragino-pron, nfssonly, deluxe, expert]{luatexja-preset}
+\usepackage{pgfpages}
+\usepackage{fontspec}
+\usepackage{epigraph}
+\usepackage{etoolbox}
+\usepackage{tikz}
+\usepackage{framed}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{libertine}
+\usepackage{bxcoloremoji}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{diagbox}
+\usepackage{caption}
+\usepackage{tikz-qtree}
+
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks,linkcolor=,urlcolor=links}
 
 \usetheme{Boadilla}
 \usecolortheme{seahorse}
 % \usefonttheme{serif}
+
+\setbeamercolor{page number in head/foot}{bg=blue!10}
+\makeatother
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+      \usebeamerfont{author in head/foot}\insertshortauthor\hspace*{1ex}(\insertshortinstitute)
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.3\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+      \usebeamerfont{title in head/foot}\insertshorttitle
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.2\paperwidth,ht=2.25ex,dp=1ex,center]{date in head/foot}%
+      \insertshortdate
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.1\paperwidth,ht=2.25ex,dp=1ex,center]{page number in head/foot}%
+      \insertframenumber{} / \inserttotalframenumber\hspace*{1ex}
+    \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatletter
+
 \beamertemplatenavigationsymbolsempty
 
 \setbeamertemplate{bibliography item}{\insertbiblabel}
 \setbeamersize{description width=1cm}
 \setbeamertemplate{items}[circle]
+\setbeamertemplate{section in toc}[circle]
+\setbeamertemplate{subsection in toc}{%
+  \leavevmode\leftskip=2em
+  {%
+    \usebeamerfont*{itemize item}%
+    \usebeamercolor{subsection number projected}%
+    \color{bg}%
+    \raise1.25pt\hbox{\donotcoloroutermaths$\bullet$}}%
+  \hskip1.5ex\inserttocsubsection\par}
+\setbeamercolor{title}{bg=white}
+\setbeamertemplate{title page}
+{%
+  \vbox{}
+  \vfill
+  \begingroup
+    \centering
+    \hrulefill
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=true]{title}
+      \usebeamerfont{title}\inserttitle\par%
+      \ifx\insertsubtitle\@empty%
+      \else%
+        \vskip0.25em%
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+      \fi%     
+    \end{beamercolorbox}%
+    \hrulefill
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=true]{author}
+      \usebeamerfont{author}\insertauthor
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=true]{institute}
+      \usebeamerfont{institute}\insertinstitute
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=true]{date}
+      \usebeamerfont{date}\insertdate
+    \end{beamercolorbox}\vskip0.5em
+    {\usebeamercolor[fg]{titlegraphic}\inserttitlegraphic\par}
+  \endgroup
+  \vfill
+}
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{note page}{\pagecolor{yellow!5}\insertnote}
 
-\usepackage{luacode}
-\usepackage{luatexja}
-\usepackage{pgfpages}
-\usepackage{fontspec}
 
-\begin{luacode*}
-  USE_IPAFONT = os.getenv"USE_IPAFONT"
-  USE_YUFONT = os.getenv"USE_YUFONT"
-  
-  if USE_YUFONT == "true" then
-    tex.sprint("\\AtBeginDocument{\\usepackage[yu-osx, deluxe, expert]{luatexja-preset}}")
-  elseif USE_IPAFONT == "true" then
-    tex.sprint("\\AtBeginDocument{\\usepackage[ipaex, deluxe, expert]{luatexja-preset}}")
-  else
-    tex.sprint("\\AtBeginDocument{\\usepackage[hiragino-pro, deluxe, expert]{luatexja-preset}}")
-  end
-\end{luacode*}
+% ============ ここを消すとNote消える ================
+% \mode<handout>{%
+%   \setbeameroption{show notes on second screen=right}%
+% }
+% ============ ここを消すとNote消える ================
 
-\usepackage{epigraph}
-\usepackage{etoolbox}
-\usepackage{tikz}
-\usepackage{framed}
-\usepackage[ss]{libertine}
-\usepackage{amsmath}
-\usepackage{mathtools}
-\usepackage{listings}
-\usepackage{caption}
-\usepackage{tikz-qtree}
 
 \renewcommand{\kanjifamilydefault}{\gtdefault}
 
@@ -46,51 +109,79 @@
 \DeclareCaptionFormat{listing}{{\color{bluegray}\lstlistingname}#2#3}
 \captionsetup[lstlisting]{format=listing, font={footnotesize}}
 
-%\setbeameroption{show notes on second screen=right}
-
 \setmonofont[Ligatures=TeX]{CMU Typewriter Text}
 
-\input{vc.tex}
-
+\newcommand{\xcolon}{：}
 \newcommand{\Fujitask}{{\rmfamily\bfseries Fujitask}}
 
-\title[Fujitask]{%
-  \bfseries\rmfamily\mcfamily
-  Fujitask \\
-  {\footnotesize The Transaction Monad Meets ``Subtypes''}
+\title[Fujitask meets Extensible Effects]{%
+  {\bfseries\rmfamily\mcfamily\huge\scshape
+    \Fujitask \\
+    meets\\
+    Extensible Effects%
+  }%
 }
-\author[吉村 優]{%
-  吉村 優 \\
-  Hikaru \textsc{Yoshimura}
+\author[Hikaru Yoshimura]{%
+  Hikaru \textsc{Yoshimura}（吉村 優）
 }
-\date[July 11, 2018]{%
-   July 11, 2018 \\%
-  {\footnotesize (Git Commit ID: \href{https://github.com/y-yu/fujitask-slide}{\GITAbrHash})}
+\date[ScalaMatsuri, June 209 2019]{%
+  \href{https://www.tryswift.co/events/2019/tokyo/en/}{ScalaMatsuri on \oldstylenums{June 29, 2019}} \\
+  {\scriptsize (\href{https://github.com/y-yu/fujitask-eff-slide}{\texttt{y-yu/fujitask-eff-slide@\GITAbrHash}})}%
 }
-\institute[RMP]{%
-  リクルートマーケティングパートナーズ \\
-  \href{mailto:hikaru_yoshimura@r.recruit.co.jp}{hikaru\_yoshimura@r.recruit.co.jp} \\
+\institute[Recruit Markting Partners Co., Ltd.]{%
+  Recruit Markting Partners Co., Ltd.\\
   \href{mailto:yyu@mental.poker}{yyu@mental.poker}
 }
-% \institute{%
-%   \href{mailto:yyu@mental.poker}{yyu@mental.poker}
-% }
 
 \input{./lib/quotebox.tex}
 \input{./lib/footnotemark.tex}
 \input{./lib/ballon.tex}
 \input{./lib/listings.tex}
+\input{vc.tex}
 
 \setbeamertemplate{items}[circle]
 
-
-\newcommand\ballref[1]{%
+\newcommand\ballcircle[1]{%
   {%
     \usebeamercolor{enumerate item}%
     \tikzset{beameritem/.style={circle,inner sep=0,minimum size=2ex,text=enumerate item.bg,fill=enumerate item.fg,font=\footnotesize}}%
-    \tikz[baseline=(n.base)]\node(n)[beameritem]{\ref{#1}};%
+    \tikz[baseline=(n.base)]\node(n)[beameritem]{#1};%
   }
 }
+\newcommand\ballref[1]{%
+  \ballcircle{\ref{#1}}
+}
+
+\newcommand\ce[1]{%
+  \coloremoji{#1}
+}
+
+\newenvironment{notes}
+  {%
+    \begin{xlrbox}{NotesBox}
+    \begin{minipage}{.95\textwidth}
+    \small\rmfamily\mcfamily
+    \begin{itemize}
+    \setlength{\itemindent}{0em}
+  }{%
+    \end{itemize}
+    \end{minipage}
+    \end{xlrbox}
+    \note{\theNotesBox}}
+
+\makeatletter
+\newsavebox\temp@simple@callout@box
+\newcommand{\simplecallout}[3]{%
+  \sbox{\temp@simple@callout@box}{\mbox{#3}}%
+  \begin{center}%
+    \begin{tikzpicture}%
+      \calloutquote[width=1.1\wd\temp@simple@callout@box,position={(#1.5,-0.2)},fill=#2,rounded corners]{
+        #3%
+      }%
+    \end{tikzpicture}%
+  \end{center}
+}
+\makeatother
 
 \begin{document}
 
@@ -110,7 +201,7 @@
     \begin{column}{0.4\textwidth}
       \begin{center}
         \begin{figure}
-          \includegraphics[width=0.95\textwidth]{img/bird2x.png}
+          \includegraphics[width=0.95\textwidth]{img/bird2x_big_gifu.png}
         \end{figure}
       \end{center}
  
@@ -127,7 +218,7 @@
       \begin{itemize}
         \item<+-> 筑波大学 情報科学類卒（学士）
         \item<+-> プログラム論理研究室
-        \item<+-> トランザクションとサブタイプについて
+        \item<+-> \LaTeX とかScalaとか
       \end{itemize}
     \end{column}
   \end{columns}
@@ -272,7 +363,9 @@ withTransaction { somethingOperation }
   \end{itemize}
 \end{frame}
 
-\section{\protect\Fujitask とサブタイプ}
+\section{モナド版\protect\Fujitask}
+
+\subsection{\protect\Fujitask とサブタイプ}
 
 \begin{frame}
   \frametitle{\Fujitask とは？}
@@ -576,10 +669,9 @@ transaction.run()
   \end{itemize}
 \end{frame}
 
-\section{まとめ}
 
 \begin{frame}
-  \frametitle{まとめ}
+  \frametitle{ここまでのまとめ}
 
   \pause
   \begin{itemize}
@@ -587,6 +679,150 @@ transaction.run()
     \item<+-> 束構造を型レベルにエンコードする手段としてサブタイプが使える
     \item<+-> 束構造に基づくアドホックな処理を、サブタイプと型クラスで実現できる
     \item<+-> オブジョクト指向プログラミングと関数型プログラミングは美しく融合されうる
+  \end{itemize}
+\end{frame}
+
+\section{\Fujitask とExtensible Effects}
+
+\begin{frame}
+  \frametitle{Extensible Effects}
+
+  \pause
+  \begin{itemize}
+    \item<+-> \textbf{モナド}は1つの\textbf{効果}%
+    \footnote[frame]{副作用のこと。最近だと``計算効果（Computational effect）''や%
+      単に``効果（Effect）''と言うこともある。}%
+    を抽象化する1つの手段
+
+    \item<+-> 1つのモナドは1つの効果しか抽象化できないため、
+    \lstinline|Reader[Env, Future[Either[Err, Option[A]]]]|のような
+    \emph{モナドスタック}を使って複数の効果を表現する
+    \begin{itemize}
+      \item<+-> しかしこうすると\lstinline|for|式で内側のモナドへアクセスしにくくなる\ce{😞}
+    \end{itemize}
+
+    \item<+-> \textbf{モナドトランスフォーマー}はこのような問題を解決するが、
+    あるモナドについて専用のモナドトランスフォーマーが必要\ce{😞}
+
+    \item<+-> \emph{Extensible Effects}は特別な仕組みなしに
+    モナドスタックを表現可能\ce{😄}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\Fujitask とExtensible Effects}
+
+  \begin{itemize}
+    \item<+-> \Fujitask はサブタイプが必要
+
+    \item<+-> Extensible EffectsはHaskell生まれ、
+    でもサブタイプはない！
+  \end{itemize}
+
+  \uncover<+->{
+    \simplecallout{-}{blue!20}{\Fujitask をExtensible Effectsへ持っていけるか？}
+  }
+
+  \begin{itemize}
+    \item<+-> ねこはる（\texttt{@halcat0x15a}）さんの作った
+    \href{https://github.com/halcat0x15a/kits-eff}{kits-eff}を利用
+    \begin{itemize}
+      \item \href{https://github.com/atnos-org/eff}{atnos-eff}とは違った
+      サブタイプを利用したExtensible Effectsの実装
+    \end{itemize}
+
+    \item<+-> できたものはここ\ce{👇}\url{https://github.com/y-yu/fujitask-eff}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example}
+
+  \begin{itemize}
+    \item<+-> こういう感じでいろいろな効果と一緒に\lstinline|for|に入れられる
+  \end{itemize}
+
+  \begin{uncoverenv}<.->
+\begin{lstlisting}[style=scala]
+case class User(id: Long, name: String)
+// create table `user` (
+//   `id` bigint not null auto_increment,
+//   `name` varchar(64) not null
+// )
+
+val eff = for {
+  name <- Reader.ask[String]
+  user  <- userRepository.create(name)
+} yield {
+  logger.info(s"user is \$user")
+}
+Fujitask.run(Reader.run("piyo")(eff)) 
+\end{lstlisting}
+
+\begin{lstlisting}[style=plain]
+ReadWriteRunner begin --------->
+user is Some(User(2,piyo))
+<--------- ReadWriteRunner end
+\end{lstlisting}  
+  \end{uncoverenv}
+ 
+  \begin{itemize}
+    \item<+-> デモ
+    \item<+-> 今回はインタープリターの\lstinline|flatMap|だけ見てみましょう
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\Fujitask のインタープリター}
+
+\begin{lstlisting}[style=scala]
+object Fujitask {
+  def run[I <: Transaction: Manifest, A](
+    eff: Eff[I, A]
+  )(
+    implicit runner: FujitaskRunner[I],
+    ec: ExecutionContext
+  ): Future[A] = {
+    def handle(i: I) = new ApplicativeInterpreter[Fujitask, Any] {
+      def flatMap[T, B](fa: Fujitask with Fx[T])(k: T => Eff[Any, Future[B]]): Eff[Any, Future[B]] =
+        fa match {
+          case Execute(f) =>
+            Eff.Pure(f(ec).flatMap(a => Eff.run(k(a))))
+          case _: Ask[I] =>
+            k(i.asInstanceOf[T])
+        }
+    }
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item<+-> \ce{🙄}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\Fujitask のインタープリター}
+
+  \begin{itemize}
+    \item<+-> 解説しようと思ったものの、ちょっと時間がない……\ce{😇}
+
+    \item<+-> 今回はモチベーションだけで勘弁してください\ce{🙇}
+
+    \item<+-> 解説資料\cite{qiita_fujitask_eff}があるので
+    興味がでた人はこれを読んで！
+
+    \item<+-> あと、kits-effは\cite{shinchoku}を読むといいです
+  \end{itemize}
+\end{frame}
+
+\section{まとめ}
+
+\begin{frame}
+  \frametitle{まとめ}
+
+  \pause
+  \begin{itemize}
+    \item<+-> \Fujitask は関数型プログラミングとオブジェクト指向プログラミングのよい融合
   \end{itemize}
 \end{frame}
 

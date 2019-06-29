@@ -1,10 +1,9 @@
-Fujitask Slide
+Fujitask Eff Slide
 ============================
 
 ## 成果物（PDF）
 
-- [アニメーションあり版](https://y-yu.github.io/fujitask-slide/fujitask.pdf)
-- [アニメーションなし版](https://y-yu.github.io/fujitask-slide/fujitask_without_animation.pdf)
+- TODO
 
 ## コンパイル
 
